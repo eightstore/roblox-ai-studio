@@ -9,7 +9,8 @@
     "run-once": "tsx src/index.ts --once",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/**/*.test.ts",
-    "db:init": "tsx src/lib/initDb.ts"
+    "db:init": "tsx src/lib/initDb.ts",
+    "reset": "node -e \"const fs=require('fs');for(const d of ['storage/database','storage/items'])fs.rmSync(d,{recursive:true,force:true});console.log('Data uji coba dihapus. Jalankan npm start lagi.')\""
   },
   "keywords": [],
   "author": "",

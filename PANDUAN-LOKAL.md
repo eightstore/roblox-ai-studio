@@ -115,7 +115,7 @@ Halaman: **http://localhost:3000**
 - **Mematikan:** klik jendela hitam → tekan **Ctrl + C** (jika ditanya, ketik `Y` lalu Enter), atau tutup jendelanya.
 - **Menyalakan lagi:** klik dua kali `mulai.bat` lagi. Kali ini langsung jalan tanpa instal ulang.
 - Data karyamu **tetap tersimpan** di folder `storage\` dan tidak hilang saat dimatikan.
-- **Reset ke awal:** matikan aplikasi, lalu hapus folder `storage\database` dan `storage\items`.
+- **Reset ke awal (hapus semua karya uji coba):** matikan aplikasi, ketik `npm run reset` di terminal, lalu `npm start` lagi.
 
 Hasil kerja agent bisa dibuka langsung di folder `storage\items\<nomor>\`: gambar `shirt.png`, `blender-brief.md`, script game `.luau`.
 
@@ -160,7 +160,8 @@ Gemini key bisa dipakai **tanpa** Claude API key. Desain kaosnya tetap contoh mo
 
 Kalau muncul error merah di kartu karya:
 - `GEMINI_API_KEY tidak valid`: salin ulang key-nya, pastikan tidak ada spasi.
-- `Kuota Gemini habis (429)`: billing belum aktif, atau batas kuota tercapai.
+- `model gambar butuh billing aktif (kuota gratis = 0)`: model gambar Gemini tidak punya kuota gratis. Aktifkan billing di AI Studio.
+- `Kuota Gemini habis (429)`: batas kuota tercapai. Coba lagi nanti.
 - `Tidak ada model gambar Gemini yang tersedia`: Google mengganti nama model. Cek nama model gambar terbaru di dokumentasi Gemini API, lalu ubah `GEMINI_IMAGE_MODEL`.
 
 ---

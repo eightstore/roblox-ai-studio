@@ -27,8 +27,13 @@ async function normalize(img: Buffer, size: number) {
   return sharp(img).resize(size, size, { fit: "cover" }).png().toBuffer();
 }
 
+// Setelah kena 429, permintaan berikutnya langsung gagal selama 10 menit supaya tidak membanjiri API.
+let quotaBlockedUntil = 0;
+let quotaMessage = "";
+
 /** Model dicoba berurutan; kalau satu tidak tersedia (404), lanjut ke model berikutnya di GEMINI_IMAGE_MODEL. */
 async function generateWithGemini(prompt: string): Promise<Buffer> {
+  if (Date.now() < quotaBlockedUntil) throw new Error(quotaMessage);
   let lastError = "";
   for (const model of config.geminiImageModels) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
@@ -49,7 +54,14 @@ async function generateWithGemini(prompt: string): Promise<Buffer> {
     if (!res.ok) {
       const msg = json?.error?.message ?? res.statusText;
       if (res.status === 400 && /api key/i.test(msg)) throw new Error("GEMINI_API_KEY tidak valid. Cek lagi key di Google AI Studio.");
-      if (res.status === 429) throw new Error(`Kuota Gemini habis / terlalu banyak permintaan (429). Cek billing di Google AI Studio. Detail: ${msg}`);
+      if (res.status === 429) {
+        // "limit: 0" berarti model ini tidak tersedia di tingkat gratis sama sekali: billing wajib.
+        quotaMessage = /limit: 0/.test(msg)
+          ? "Gemini menolak: model gambar butuh billing aktif (kuota gratis = 0). Aktifkan billing di Google AI Studio."
+          : `Kuota Gemini habis / terlalu banyak permintaan (429). Coba lagi nanti. Detail: ${msg.split("\n")[0]}`;
+        quotaBlockedUntil = Date.now() + 10 * 60_000;
+        throw new Error(quotaMessage);
+      }
       throw new Error(`Gemini ${res.status}: ${msg}`);
     }
 

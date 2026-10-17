@@ -5,7 +5,7 @@ import fastifyStatic from "@fastify/static";
 import { config } from "./config.js";
 import { logActivity, q } from "./lib/db.js";
 import { notify } from "./lib/notify.js";
-import { reviseItem, runCycle } from "./pipeline.js";
+import { isCycleRunning, reviseItem, runCycle } from "./pipeline.js";
 import { uploadClassicShirt } from "./roblox/openCloud.js";
 
 export const AGENT_PROFILES = [
@@ -153,7 +153,8 @@ export function buildServer() {
       return { status: "published" };
     });
 
-    admin.post("/api/admin/cycle", async () => {
+    admin.post("/api/admin/cycle", async (_req, reply) => {
+      if (isCycleRunning()) return reply.code(409).send({ error: "Siklus sebelumnya masih berjalan. Tunggu sampai selesai, lalu klik Muat." });
       runCycle().catch((err) => notify(`❌ Siklus manual gagal: ${err.message}`));
       return { started: true };
     });

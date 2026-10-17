@@ -121,7 +121,10 @@ async function card(it) {
 
 $("#reload").addEventListener("click", load);
 $("#status").addEventListener("change", load);
-$("#cycle").addEventListener("click", async () => { try { await api("/api/admin/cycle", { method: "POST", body: "{}" }); alert("Siklus dimulai. Hasil muncul dalam beberapa menit."); } catch (e) { alert(e.message); } });
+$("#cycle").addEventListener("click", async () => {
+  if (!confirm("Satu siklus membuat ±6 karya baru (dan memakai kuota/biaya API kalau key sudah diisi). Jalankan sekarang?")) return;
+  try { await api("/api/admin/cycle", { method: "POST", body: "{}" }); alert("Siklus dimulai. Tunggu 1-2 menit, lalu klik Muat."); } catch (e) { alert(e.message); }
+});
 if (tokenEl.value) load();
 </script>
 </body>

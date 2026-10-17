@@ -112,6 +112,7 @@ async function produceAndCheck(id: number, kind: Kind, data: any) {
 // ---------- Siklus 24 jam ----------
 
 let running = false;
+export const isCycleRunning = () => running;
 
 export async function runCycle() {
   if (running) {
