@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Admin Studio</title>
+<style>
+  :root { --bg:#f6f6f4; --card:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e3e3de; --ok:#1f7a4d; --bad:#b42318; --warn:#b54708; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151514; --card:#1f1f1d; --ink:#ecece8; --muted:#9a9a94; --line:#33332f; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:16px; border-bottom:1px solid var(--line); }
+  header h1 { font-size:18px; margin:0 auto 0 0; }
+  input, select, button, textarea { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--ink); }
+  button { cursor:pointer; } button.ok { background:var(--ok); color:#fff; border:0; } button.bad { background:var(--bad); color:#fff; border:0; }
+  main { padding:16px; display:grid; gap:16px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .meta { color:var(--muted); font-size:12px; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; }
+  .block { color:var(--bad); } .warn { color:var(--warn); }
+  img.preview { width:100%; image-rendering:pixelated; background:repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0/16px 16px; border-radius:6px; }
+  details pre { white-space:pre-wrap; word-break:break-word; font-size:12px; max-height:300px; overflow:auto; }
+  .actions { display:flex; gap:6px; flex-wrap:wrap; }
+  ul { margin:0; padding-left:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Dashboard Admin</h1>
+  <input id="token" type="password" placeholder="ADMIN_TOKEN">
+  <select id="status">
+    <option value="pending_review">Menunggu review</option>
+    <option value="qa_failed">Gagal QA</option>
+    <option value="approved">Approved (perlu finalisasi)</option>
+    <option value="publish_failed">Upload gagal</option>
+    <option value="published">Published</option>
+    <option value="">Semua</option>
+  </select>
+  <button id="reload">Muat</button>
+  <button id="cycle">Jalankan siklus sekarang</button>
+</header>
+<main id="list"></main>
+<script>
+const $ = (s) => document.querySelector(s);
+const tokenEl = $("#token");
+try { tokenEl.value = localStorage.getItem("adminToken") || ""; } catch {}
+tokenEl.addEventListener("change", () => { try { localStorage.setItem("adminToken", tokenEl.value); } catch {} });
+
+const api = async (url, opts = {}) => {
+  const res = await fetch(url, { ...opts, headers: { authorization: `Bearer ${tokenEl.value}`, "content-type": "application/json", ...(opts.headers || {}) } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || res.status);
+  return body;
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c]);
+const fileUrl = async (p) => {
+  const res = await fetch(`/api/admin/files?path=${encodeURIComponent(p)}`, { headers: { authorization: `Bearer ${tokenEl.value}` } });
+  return URL.createObjectURL(await res.blob());
+};
+
+async function load() {
+  const list = $("#list");
+  list.innerHTML = "Memuat…";
+  try {
+    const status = $("#status").value;
+    const items = await api(`/api/admin/items${status ? `?status=${status}` : ""}`);
+    list.innerHTML = items.length ? "" : "<p>Tidak ada item.</p>";
+    for (const it of items) list.append(await card(it));
+  } catch (e) { list.innerHTML = `<p class="block">${esc(e.message)}</p>`; }
+}
+
+async function card(it) {
+  const el = document.createElement("div");
+  el.className = "card";
+  const findings = [...(it.rule_check || []).map((f) => ({ severity: f.severity, detail: `[${f.rule}] ${f.detail}` })), ...((it.qa && it.qa.issues) || []).map((i) => ({ severity: i.severity, detail: `[${i.category}] ${i.detail}` }))];
+  const png = (it.files || []).find((f) => f.endsWith("shirt.png") || f.endsWith("color_1024.png"));
+  el.innerHTML = `
+    <div><strong>${esc(it.name)}</strong> <span class="pill">${esc(it.kind)}</span> <span class="pill">${esc(it.status)}</span></div>
+    <div class="meta">#${it.id} · ${esc(it.agent)} · siklus ${it.cycle_id ?? "-"}${it.revision_of ? ` · revisi dari #${it.revision_of}` : ""}${it.bundle_key ? ` · set ${esc(it.bundle_key)}` : ""}</div>
+    ${png ? `<img class="preview" alt="">` : ""}
+    <div>${esc(it.data.marketplace_description || it.data.core_loop || "")}</div>
+    ${it.qa ? `<div class="meta">QA: <strong>${esc(it.qa.verdict)}</strong> · skor ${esc(it.qa.quality_score ?? "-")}/10 — ${esc(it.qa.summary || it.qa.error || "")}</div>` : ""}
+    ${findings.length ? `<ul>${findings.map((f) => `<li class="${f.severity}">${esc(f.detail)}</li>`).join("")}</ul>` : ""}
+    ${it.admin_note ? `<div class="meta">Catatan: ${esc(it.admin_note)}</div>` : ""}
+    <details><summary>File (${(it.files || []).length})</summary><ul>${(it.files || []).map((f) => `<li><a href="#" data-file="${esc(f)}">${esc(f)}</a></li>`).join("")}</ul></details>
+    <details><summary>Data JSON</summary><pre>${esc(JSON.stringify(it.data, null, 2))}</pre></details>
+    <textarea rows="2" placeholder="Catatan revisi / alasan tolak"></textarea>
+    <div class="actions">
+      <button class="ok" data-act="approve">Approve</button>
+      <button data-act="revise">Revisi</button>
+      <button class="bad" data-act="reject">Tolak</button>
+      ${it.status === "approved" ? `<button data-act="published">Tandai terbit…</button>` : ""}
+    </div>`;
+  if (png) fileUrl(png).then((u) => (el.querySelector("img").src = u));
+  el.querySelectorAll("[data-file]").forEach((a) => a.addEventListener("click", async (e) => { e.preventDefault(); window.open(await fileUrl(a.dataset.file)); }));
+  el.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", async () => {
+    const note = el.querySelector("textarea").value.trim();
+    try {
+      if (b.dataset.act === "revise" && !note) return alert("Isi catatan revisi dulu.");
+      if (b.dataset.act === "published") {
+        const id = prompt("Roblox asset ID:");
+        if (!id) return;
+        await api(`/api/admin/items/${it.id}/published`, { method: "POST", body: JSON.stringify({ roblox_asset_id: id }) });
+      } else {
+        await api(`/api/admin/items/${it.id}/${b.dataset.act}`, { method: "POST", body: JSON.stringify({ note }) });
+      }
+      load();
+    } catch (e) { alert(e.message); }
+  }));
+  return el;
+}
+
+$("#reload").addEventListener("click", load);
+$("#status").addEventListener("change", load);
+$("#cycle").addEventListener("click", async () => { try { await api("/api/admin/cycle", { method: "POST", body: "{}" }); alert("Siklus dimulai. Hasil muncul dalam beberapa menit."); } catch (e) { alert(e.message); } });
+if (tokenEl.value) load();
+</script>
+</body>
+</html>

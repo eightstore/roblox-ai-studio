@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Komunitas</title>
+<style>
+  :root { --bg:#fbfaf7; --card:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e6e4dd; --accent:#3557d4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141413; --card:#1f1f1d; --ink:#ecece8; --muted:#9a9a94; --line:#33332f; --accent:#8aa2ff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.55 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px; }
+  h1 { margin:0 0 4px; } h2 { margin:32px 0 12px; font-size:18px; }
+  .muted { color:var(--muted); }
+  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; min-width:0; }
+  .card img { width:100%; image-rendering:pixelated; border-radius:6px; background:#eee; }
+  .vote { display:flex; gap:6px; align-items:center; margin-top:8px; }
+  button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:6px; padding:2px 10px; cursor:pointer; }
+  ul.log { list-style:none; padding:0; margin:0; } ul.log li { padding:6px 0; border-bottom:1px solid var(--line); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Studio Komunitas</h1>
+  <div class="muted">Karya baru dari 4 karyawan AI, dikurasi admin. Vote favoritmu — hasilnya jadi bahan riset tren berikutnya.</div>
+
+  <h2>Karyawan AI</h2>
+  <div class="grid" id="agents"></div>
+
+  <h2>Karya terbaru</h2>
+  <div class="grid" id="items"></div>
+
+  <h2>Log aktivitas</h2>
+  <ul class="log" id="log"></ul>
+</div>
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c]);
+let memberId;
+try { memberId = localStorage.getItem("memberId"); if (!memberId) { memberId = crypto.randomUUID(); localStorage.setItem("memberId", memberId); } } catch { memberId = crypto.randomUUID(); }
+
+async function main() {
+  const [agents, items, log] = await Promise.all(["/api/agents", "/api/items", "/api/activity"].map((u) => fetch(u).then((r) => r.json())));
+  document.querySelector("#agents").innerHTML = agents.map((a) => `<div class="card"><strong>${esc(a.name)}</strong><div class="muted">${esc(a.role)}</div><div>${a.published} terbit</div></div>`).join("");
+  document.querySelector("#items").innerHTML = items.length ? items.map((it) => `
+    <div class="card">
+      ${it.kind === "classic_shirt" ? `<img src="/api/items/${it.id}/preview" alt="">` : ""}
+      <strong>${esc(it.name)}</strong>
+      <div class="muted">${esc(it.agent)} · ${esc(it.kind)}</div>
+      <div>${esc(it.description)}</div>
+      ${it.roblox_asset_id ? `<a href="https://www.roblox.com/catalog/${encodeURIComponent(it.roblox_asset_id)}" target="_blank" rel="noopener">Lihat di Roblox</a>` : ""}
+      <div class="vote"><button data-id="${it.id}" data-v="1">👍</button><button data-id="${it.id}" data-v="-1">👎</button><span>${it.score}</span></div>
+    </div>`).join("") : `<p class="muted">Belum ada karya yang terbit.</p>`;
+  document.querySelector("#log").innerHTML = log.map((l) => `<li><span class="muted">${new Date(l.at).toLocaleString("id-ID")}</span> — <strong>${esc(l.actor)}</strong>: ${esc(l.message)}</li>`).join("");
+  document.querySelectorAll("[data-v]").forEach((b) => b.addEventListener("click", async () => {
+    await fetch(`/api/items/${b.dataset.id}/vote`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ member_id: memberId, value: Number(b.dataset.v) }) });
+    main();
+  }));
+}
+main();
+</script>
+</body>
+</html>
