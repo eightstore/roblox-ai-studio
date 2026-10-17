@@ -20,9 +20,12 @@ db/schema.sql         tabel cycles, items, votes, activity_log
 
 ## Menjalankan
 
+> **Uji di laptop tanpa VPS & tanpa biaya:** ikuti [PANDUAN-LOKAL.md](PANDUAN-LOKAL.md). Kalau `ANTHROPIC_API_KEY` kosong, proyek berjalan dalam mode demo.
+
 ```bash
 npm install
 cp .env.example .env          # isi ANTHROPIC_API_KEY, DATABASE_URL, ADMIN_TOKEN
+docker compose up -d          # Postgres lokal (atau pakai Supabase)
 npm run db:init               # buat tabel (atau tempel db/schema.sql di Supabase SQL editor)
 npm run run-once              # uji 1 siklus penuh
 npm start                     # server + jadwal harian (CYCLE_CRON)

@@ -8,6 +8,7 @@ const asJson = (label: string, v: unknown) => `<${label}>\n${JSON.stringify(v, n
 
 export function trendScout(raw: RawTrendData) {
   return runAgent({
+    agent: "scout",
     system: P.SCOUT,
     input: `${asJson("data_tren_mentah", raw)}\n\nBuat laporan tren untuk siklus ini.`,
     schema: S.TrendReport,
@@ -17,6 +18,7 @@ export function trendScout(raw: RawTrendData) {
 
 export function kobbie(trends: S.TrendReport, revision?: Revision) {
   return runAgent({
+    agent: "kobbie",
     system: P.KOBBIE,
     input: withRevision(asJson("trend_data", trends.fashion_trends), revision),
     schema: S.KobbieOutput,
@@ -25,6 +27,7 @@ export function kobbie(trends: S.TrendReport, revision?: Revision) {
 
 export function bruno(trends: S.TrendReport, revision?: Revision) {
   return runAgent({
+    agent: "bruno",
     system: P.BRUNO,
     input: withRevision(asJson("trend_data", trends.fashion_trends), revision),
     schema: S.BrunoOutput,
@@ -35,6 +38,7 @@ export function sesko(trends: S.TrendReport, brunoItems: unknown[], revision?: R
   // Ringkas item Bruno: Sesko cukup tahu nama, kategori, siluet, dan palet untuk mencocokkan set.
   const brief = brunoItems.map((b: any) => ({ name: b.name, category: b.category, target: b.target, shape_3d: b.shape_3d, trend: b.trend }));
   return runAgent({
+    agent: "sesko",
     system: P.SESKO,
     input: withRevision(`${asJson("trend_data", trends.fashion_trends)}\n${asJson("bruno_items", brief)}`, revision),
     schema: S.SeskoOutput,
@@ -43,6 +47,7 @@ export function sesko(trends: S.TrendReport, brunoItems: unknown[], revision?: R
 
 export function dalot(trends: S.TrendReport, revision?: Revision) {
   return runAgent({
+    agent: "dalot",
     system: P.DALOT,
     input: withRevision(asJson("game_trend_data", trends.game_trends), revision),
     schema: S.DalotOutput,
@@ -53,6 +58,7 @@ export function dalot(trends: S.TrendReport, revision?: Revision) {
 
 export function qualityCheck(kind: string, data: unknown, ruleFindings: unknown[]) {
   return runAgent({
+    agent: "qa",
     system: P.QA,
     input: `Jenis karya: ${kind}\n${asJson("karya", data)}\n${asJson("temuan_cek_otomatis", ruleFindings)}\n\nPeriksa karya ini.`,
     schema: S.QaResult,

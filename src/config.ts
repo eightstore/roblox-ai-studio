@@ -9,6 +9,8 @@ function env(name: string, fallback?: string): string {
 
 export const config = {
   model: env("CLAUDE_MODEL", "claude-opus-5-5"),
+  // Mode demo: agent memakai contoh output (gratis). Otomatis aktif kalau ANTHROPIC_API_KEY kosong.
+  demoMode: env("DEMO_MODE", "") === "true" || (!process.env.ANTHROPIC_API_KEY && env("DEMO_MODE", "") !== "false"),
   databaseUrl: env("DATABASE_URL", ""),
   groupName: env("GROUP_NAME", "Studio Roblox"),
   cycleCron: env("CYCLE_CRON", "0 2 * * *"),

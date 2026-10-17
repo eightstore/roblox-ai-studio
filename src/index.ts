@@ -5,6 +5,8 @@ import { notify } from "./lib/notify.js";
 import { runCycle } from "./pipeline.js";
 import { buildServer } from "./server.js";
 
+if (config.demoMode) console.log("⚠️  MODE DEMO: agent memakai contoh output (tanpa Claude API, tanpa biaya).");
+
 if (process.argv.includes("--once")) {
   // Jalankan satu siklus lalu keluar (untuk uji coba atau cron eksternal seperti Railway Cron).
   await runCycle();

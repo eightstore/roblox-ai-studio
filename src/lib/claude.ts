@@ -1,9 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
+import { MOCK } from "../agents/mock.js";
 import { config } from "../config.js";
 
-const client = new Anthropic();
+// Klien dibuat saat dibutuhkan supaya mode demo tidak butuh API key.
+let client: Anthropic | undefined;
 
 export class AgentRefusedError extends Error {}
 
@@ -15,12 +17,18 @@ type Effort = "low" | "medium" | "high" | "xhigh" | "max";
  * Streaming dipakai supaya output panjang (mis. script Luau DALOT) tidak kena timeout HTTP.
  */
 export async function runAgent<S extends z.ZodType>(opts: {
+  agent: keyof typeof MOCK;
   system: string;
   input: string;
   schema: S;
   effort?: Effort;
   maxTokens?: number;
 }): Promise<z.infer<S>> {
+  if (config.demoMode) {
+    await new Promise((r) => setTimeout(r, 300));
+    return opts.schema.parse(MOCK[opts.agent]) as z.infer<S>;
+  }
+  client ??= new Anthropic();
   const stream = client.beta.messages.stream({
     model: config.model,
     max_tokens: opts.maxTokens ?? 32000,

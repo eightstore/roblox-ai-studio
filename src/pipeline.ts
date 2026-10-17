@@ -190,6 +190,8 @@ export async function reviseItem(itemId: number, adminNote: string) {
   else if (kind === "ugc_pants") data = (await agents.sesko(trends, [], revision)).items[0];
   else data = (await agents.dalot(trends, revision)).game;
   if (!data) throw new Error("Agent tidak mengembalikan hasil revisi");
+  // Mode demo tidak benar-benar merevisi; kembalikan karya yang sama supaya alurnya tetap masuk akal.
+  if (config.demoMode) data = item.data;
 
   const newId = await insertItem(item.cycle_id, kind, data.name ?? data.title, data, { revisionOf: itemId, bundleKey: item.bundle_key });
   await produceAndCheck(newId, kind, data);
