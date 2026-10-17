@@ -26,6 +26,11 @@ export const config = {
   adminToken: env("ADMIN_TOKEN", ""),
   port: Number(env("PORT", "3000")),
   publicBaseUrl: env("PUBLIC_BASE_URL", "http://localhost:3000"),
+  geminiApiKey: env("GEMINI_API_KEY", ""),
+  geminiImageModels: env("GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image,gemini-3.1-flash-image-preview")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean),
   imageApiUrl: env("IMAGE_API_URL", ""),
   imageApiKey: env("IMAGE_API_KEY", ""),
   robloxApiKey: env("ROBLOX_API_KEY", ""),

@@ -1,11 +1,13 @@
 import cron from "node-cron";
 import { config } from "./config.js";
 import { closeDb, ensureSchema } from "./lib/db.js";
+import { imageMode } from "./lib/images.js";
 import { notify } from "./lib/notify.js";
 import { runCycle } from "./pipeline.js";
 import { buildServer } from "./server.js";
 
 if (config.demoMode) console.log("⚠️  MODE DEMO: agent memakai contoh output (tanpa Claude API, tanpa biaya).");
+console.log(`🎨 Generator gambar: ${imageMode()}`);
 
 await ensureSchema();
 

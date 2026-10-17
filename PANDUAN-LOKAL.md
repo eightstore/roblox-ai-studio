@@ -137,6 +137,34 @@ Masih bingung? Screenshot jendela hitamnya (bagian paling bawah) dan kirim ke sa
 
 ---
 
+## Gambar sungguhan dengan Gemini API
+
+Tanpa ini, gambar kaos hanya berupa pola garis-garis placeholder.
+
+1. Buka **https://aistudio.google.com** dan login dengan akun Google.
+2. Klik **Get API key** → **Create API key** → salin key-nya (diawali `AIza…`).
+3. Pembuatan gambar lewat API biasanya **berbayar**. Aktifkan billing di project Google Cloud yang terhubung ke key itu (AI Studio akan mengarahkanmu), lalu cek harga per gambar di halaman pricing Gemini API.
+4. Buka file **`.env`** dan isi:
+   ```
+   GEMINI_API_KEY=AIza...key-kamu...
+   GEMINI_IMAGE_MODEL=gemini-2.5-flash-image,gemini-3.1-flash-image-preview
+   ```
+   Kalau dua baris ini belum ada di `.env`-mu (file lama), tambahkan saja di paling bawah.
+5. Simpan, lalu matikan dan jalankan ulang aplikasinya. Di terminal akan muncul:
+   ```
+   🎨 Generator gambar: Gemini (gemini-2.5-flash-image → gemini-3.1-flash-image-preview)
+   ```
+6. Klik **Jalankan siklus sekarang**. Membuat gambar butuh waktu, jadi tunggu 1–2 menit lalu klik **Muat**.
+
+Gemini key bisa dipakai **tanpa** Claude API key. Desain kaosnya tetap contoh mode demo, tapi gambarnya sungguhan. Ini cara murah untuk melihat kualitas gambar dulu (±6 gambar per siklus).
+
+Kalau muncul error merah di kartu karya:
+- `GEMINI_API_KEY tidak valid`: salin ulang key-nya, pastikan tidak ada spasi.
+- `Kuota Gemini habis (429)`: billing belum aktif, atau batas kuota tercapai.
+- `Tidak ada model gambar Gemini yang tersedia`: Google mengganti nama model. Cek nama model gambar terbaru di dokumentasi Gemini API, lalu ubah `GEMINI_IMAGE_MODEL`.
+
+---
+
 ## Setelah mode demo berhasil: pakai AI sungguhan
 
 Lakukan ini **hanya kalau sudah siap mengeluarkan biaya API**.
@@ -154,7 +182,7 @@ Lakukan ini **hanya kalau sudah siap mengeluarkan biaya API**.
 
 **Jaga kerahasiaan API key**: jangan dibagikan atau di-upload ke GitHub. File `.env` sudah otomatis tidak ikut ter-upload.
 
-Gambar classic shirt masih berupa **pola garis placeholder** dari warna pilihan AI sampai kamu menghubungkan generator gambar (`IMAGE_API_URL`). Itu langkah berikutnya, dan saya bisa bantu.
+Untuk gambar sungguhan, isi juga `GEMINI_API_KEY` (lihat bagian "Gambar sungguhan dengan Gemini API" di atas).
 
 ---
 

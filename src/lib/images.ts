@@ -1,25 +1,76 @@
 import sharp from "sharp";
 import { config } from "../config.js";
 
+const STYLE_SUFFIX = "Flat square texture, evenly lit, no text, no letters, no logos, no watermark.";
+
 /**
- * Generator gambar. Penyedia apa pun bisa dipakai selama ada endpoint HTTP yang menerima
- * POST {prompt, width, height} dan mengembalikan PNG (langsung, atau JSON {image_base64}).
- * Tanpa IMAGE_API_URL, dibuat tekstur placeholder dari palet supaya pipeline tetap bisa diuji gratis.
+ * Generator gambar, urutan prioritas:
+ * 1. GEMINI_API_KEY  -> Gemini API (Google AI Studio)
+ * 2. IMAGE_API_URL   -> endpoint HTTP apa pun yang menerima POST {prompt,width,height} dan mengembalikan PNG
+ *                       (langsung, atau JSON {image_base64})
+ * 3. tidak ada       -> tekstur placeholder garis-garis dari palet (gratis, untuk uji alur)
  */
 export async function generateImage(prompt: string, size: number, palette: string[]): Promise<Buffer> {
-  if (!config.imageApiUrl) return placeholderTexture(size, palette);
+  if (config.geminiApiKey) return normalize(await generateWithGemini(`${prompt}. ${STYLE_SUFFIX}`), size);
+  if (config.imageApiUrl) return normalize(await generateWithHttp(`${prompt}. ${STYLE_SUFFIX}`, size), size);
+  return placeholderTexture(size, palette);
+}
 
+export function imageMode() {
+  if (config.geminiApiKey) return `Gemini (${config.geminiImageModels.join(" → ")})`;
+  if (config.imageApiUrl) return config.imageApiUrl;
+  return "placeholder garis-garis (isi GEMINI_API_KEY untuk gambar sungguhan)";
+}
+
+// Gemini bisa mengembalikan JPEG atau ukuran lain; samakan jadi PNG persegi sesuai permintaan.
+async function normalize(img: Buffer, size: number) {
+  return sharp(img).resize(size, size, { fit: "cover" }).png().toBuffer();
+}
+
+/** Model dicoba berurutan; kalau satu tidak tersedia (404), lanjut ke model berikutnya di GEMINI_IMAGE_MODEL. */
+async function generateWithGemini(prompt: string): Promise<Buffer> {
+  let lastError = "";
+  for (const model of config.geminiImageModels) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": config.geminiApiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "1:1" } },
+      }),
+      signal: AbortSignal.timeout(180_000),
+    });
+
+    if (res.status === 404) {
+      lastError = `model ${model} tidak ditemukan`;
+      continue;
+    }
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = json?.error?.message ?? res.statusText;
+      if (res.status === 400 && /api key/i.test(msg)) throw new Error("GEMINI_API_KEY tidak valid. Cek lagi key di Google AI Studio.");
+      if (res.status === 429) throw new Error(`Kuota Gemini habis / terlalu banyak permintaan (429). Cek billing di Google AI Studio. Detail: ${msg}`);
+      throw new Error(`Gemini ${res.status}: ${msg}`);
+    }
+
+    const parts: any[] = json?.candidates?.[0]?.content?.parts ?? [];
+    const image = parts.find((p) => p.inlineData?.data);
+    if (image) return Buffer.from(image.inlineData.data, "base64");
+
+    const reason = json?.promptFeedback?.blockReason ?? json?.candidates?.[0]?.finishReason ?? "tanpa gambar";
+    throw new Error(`Gemini tidak mengembalikan gambar (${reason}). Coba revisi prompt-nya.`);
+  }
+  throw new Error(`Tidak ada model gambar Gemini yang tersedia (${lastError}). Ubah GEMINI_IMAGE_MODEL di .env.`);
+}
+
+async function generateWithHttp(prompt: string, size: number): Promise<Buffer> {
   const res = await fetch(config.imageApiUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       ...(config.imageApiKey ? { authorization: `Bearer ${config.imageApiKey}` } : {}),
     },
-    body: JSON.stringify({
-      prompt: `${prompt}. Flat square texture, no text, no letters, no logos, no watermark.`,
-      width: size,
-      height: size,
-    }),
+    body: JSON.stringify({ prompt, width: size, height: size }),
     signal: AbortSignal.timeout(120_000),
   });
   if (!res.ok) throw new Error(`Image API ${res.status}: ${await res.text()}`);
