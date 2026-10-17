@@ -16,6 +16,14 @@ export const AGENT_PROFILES = [
   { id: "dalot", name: "DALOT", role: "Game developer Luau" },
 ];
 
+const CONTENT_TYPES: Record<string, string> = {
+  ".png": "image/png",
+  ".md": "text/plain; charset=utf-8",
+  ".luau": "text/plain; charset=utf-8",
+  ".lua": "text/plain; charset=utf-8",
+  ".json": "application/json",
+};
+
 export function buildServer() {
   const app = Fastify({ logger: { level: "warn" } });
 
@@ -88,7 +96,10 @@ export function buildServer() {
     admin.get<{ Querystring: { path: string } }>("/api/admin/files", async (req, reply) => {
       const abs = path.resolve(config.storageDir, req.query.path ?? "");
       if (!abs.startsWith(config.storageDir + path.sep)) return reply.code(400).send();
-      return reply.sendFile(path.relative(config.storageDir, abs), config.storageDir);
+      // Dibaca langsung (bukan sendFile) supaya path Windows dengan "\" tetap berfungsi.
+      const content = await fs.readFile(abs).catch(() => null);
+      if (!content) return reply.code(404).send({ error: "File tidak ditemukan" });
+      return reply.type(CONTENT_TYPES[path.extname(abs).toLowerCase()] ?? "application/octet-stream").send(content);
     });
 
     admin.post<{ Params: { id: string } }>("/api/admin/items/:id/approve", async (req, reply) => {

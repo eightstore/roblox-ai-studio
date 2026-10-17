@@ -55,6 +55,7 @@ const api = async (url, opts = {}) => {
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c]);
 const fileUrl = async (p) => {
   const res = await fetch(`/api/admin/files?path=${encodeURIComponent(p)}`, { headers: { authorization: `Bearer ${tokenEl.value}` } });
+  if (!res.ok) throw new Error(`Gagal memuat ${p} (HTTP ${res.status})`);
   return URL.createObjectURL(await res.blob());
 };
 
@@ -91,8 +92,16 @@ async function card(it) {
       <button class="bad" data-act="reject">Tolak</button>
       ${it.status === "approved" ? `<button data-act="published">Tandai terbit…</button>` : ""}
     </div>`;
-  if (png) fileUrl(png).then((u) => (el.querySelector("img").src = u));
-  el.querySelectorAll("[data-file]").forEach((a) => a.addEventListener("click", async (e) => { e.preventDefault(); window.open(await fileUrl(a.dataset.file)); }));
+  if (png) {
+    const img = el.querySelector("img");
+    fileUrl(png)
+      .then((u) => { img.src = u; img.title = "Klik untuk membuka ukuran penuh"; img.style.cursor = "zoom-in"; img.onclick = () => window.open(u); })
+      .catch((e) => img.replaceWith(Object.assign(document.createElement("p"), { className: "block", textContent: e.message })));
+  }
+  el.querySelectorAll("[data-file]").forEach((a) => a.addEventListener("click", async (e) => {
+    e.preventDefault();
+    try { window.open(await fileUrl(a.dataset.file)); } catch (err) { alert(err.message); }
+  }));
   el.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", async () => {
     const note = el.querySelector("textarea").value.trim();
     try {
