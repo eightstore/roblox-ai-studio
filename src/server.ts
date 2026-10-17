@@ -17,7 +17,7 @@ export const AGENT_PROFILES = [
 ];
 
 export function buildServer() {
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: { level: "warn" } });
 
   // storage/ sengaja tidak disajikan statis: publik hanya lihat preview item published, admin lewat /api/admin/files.
   app.register(fastifyStatic, { root: path.resolve("public") });
