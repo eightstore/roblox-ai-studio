@@ -56,6 +56,25 @@ Node.js adalah program yang menjalankan aplikasi ini.
 
 > **Jangan tutup jendela hitam itu** selama mencoba. Menutupnya berarti mematikan aplikasi.
 
+### Alternatif: lewat VS Code
+Kalau kamu sudah memasang **VS Code** (https://code.visualstudio.com):
+
+1. Buka VS Code → menu **File → Open Folder…** → pilih folder `roblox-ai-studio-main` → klik **Select Folder**.
+   Kalau ditanya *"Do you trust the authors?"*, klik **Yes, I trust the authors**.
+2. Buka terminal di dalam VS Code: menu **Terminal → New Terminal**. Panel terminal muncul di bawah.
+3. **Pertama kali saja**, ketik perintah ini lalu Enter, dan tunggu 1–3 menit sampai selesai:
+   ```
+   npm install
+   ```
+   > Kalau di Windows muncul error merah *"running scripts is disabled on this system"*, klik panah kecil **∨** di samping tombol **+** pada panel terminal → pilih **Command Prompt**, lalu ketik `npm install` lagi.
+4. Jalankan aplikasinya dengan salah satu cara berikut:
+   - **Cara A (paling mudah):** tekan **F5**. Atau klik ikon **Run and Debug** (▶ dengan serangga) di bar kiri → pastikan terpilih **"▶ Mulai aplikasi"** → klik tombol hijau ▶.
+   - **Cara B:** ketik `npm start` di terminal, lalu Enter.
+5. Tunggu tulisan **✅ Siap!** di terminal. Dengan Cara A, browser terbuka otomatis. Dengan Cara B, **Ctrl + klik** link `http://localhost:3000/admin.html` di terminal.
+6. **Mematikan:** Cara A → klik kotak merah ■ di toolbar atas (atau **Shift + F5**). Cara B → klik terminal, lalu tekan **Ctrl + C**.
+
+File `.env` dibuat otomatis saat pertama kali dijalankan. Untuk mengubah pengaturan (API key, token admin), klik file `.env` di panel kiri VS Code, edit, simpan (**Ctrl + S**), lalu matikan dan jalankan ulang aplikasinya.
+
 ---
 
 ## Langkah 4 — Coba dashboard admin

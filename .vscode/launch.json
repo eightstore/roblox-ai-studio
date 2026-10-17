@@ -1,0 +1,32 @@
+{
+  // Tekan F5 (atau tab "Run and Debug" → tombol ▶) untuk menjalankan.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "▶ Mulai aplikasi (server + dashboard)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "program": "${workspaceFolder}/src/index.ts",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Dashboard admin\\s+: (http://localhost:\\d+/admin.html)",
+        "uriFormat": "%s"
+      }
+    },
+    {
+      "name": "Jalankan 1 siklus saja (tanpa server)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "program": "${workspaceFolder}/src/index.ts",
+      "args": ["--once"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    }
+  ]
+}

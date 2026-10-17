@@ -1,5 +1,13 @@
-import "dotenv/config";
+import fs from "node:fs";
 import path from "node:path";
+import dotenv from "dotenv";
+
+// Pertama kali dijalankan (mis. dari VS Code tanpa mulai.bat): buat .env dari contoh supaya pengaturan bawaan langsung terpakai.
+if (!fs.existsSync(".env") && fs.existsSync(".env.example")) {
+  fs.copyFileSync(".env.example", ".env");
+  console.log("File .env dibuat dari .env.example");
+}
+dotenv.config({ quiet: true });
 
 function env(name: string, fallback?: string): string {
   const v = process.env[name] ?? fallback;
